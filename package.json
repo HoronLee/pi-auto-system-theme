@@ -1,8 +1,9 @@
 {
   "name": "pi-auto-system-theme",
   "version": "0.1.0",
-  "description": "A pi extension that follows macOS light/dark appearance and switches between configurable themes.",
+  "description": "A pi extension that follows system light/dark appearance on macOS, Windows, and Linux.",
   "type": "module",
+  "packageManager": "pnpm@11.5.0",
   "license": "MIT",
   "author": "HoronLee",
   "repository": {
@@ -18,7 +19,10 @@
     "pi-extension",
     "pi",
     "theme",
+    "system-theme",
     "macos",
+    "windows",
+    "linux",
     "catppuccin"
   ],
   "files": [
@@ -27,8 +31,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "check": "tsc --noEmit",
-    "pack:dry": "npm pack --dry-run"
+    "check": "biome check . && tsc --noEmit",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "pack:dry": "pnpm pack --dry-run"
   },
   "pi": {
     "extensions": [
@@ -39,6 +45,7 @@
     "@earendil-works/pi-coding-agent": "*"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.0",
     "@earendil-works/pi-coding-agent": "^0.79.6",
     "@types/node": "^24.0.0",
     "typescript": "^5.9.3"

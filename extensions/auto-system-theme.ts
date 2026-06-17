@@ -1,52 +1,174 @@
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const DEFAULT_LIGHT_THEME = "light";
 const DEFAULT_DARK_THEME = "dark";
+const DEFAULT_FALLBACK_APPEARANCE: Appearance = "dark";
+const DETECTION_TIMEOUT_MS = 2_000;
+
+type Appearance = "light" | "dark";
+type DetectedAppearance = Appearance | "unknown";
 
 type AutoThemeSettings = {
   lightTheme?: string;
   darkTheme?: string;
+  fallbackAppearance?: Appearance;
 };
 
 type ThemeConfig = {
   lightTheme: string;
   darkTheme: string;
+  fallbackAppearance: Appearance;
 };
 
 async function readThemeConfig(): Promise<ThemeConfig> {
   try {
-    const raw = await readFile(join(homedir(), ".pi", "agent", "settings.json"), "utf8");
+    const raw = await readFile(
+      join(homedir(), ".pi", "agent", "settings.json"),
+      "utf8",
+    );
     const settings = JSON.parse(raw) as AutoThemeSettings;
+    const fallbackAppearance =
+      settings.fallbackAppearance === "light" ||
+      settings.fallbackAppearance === "dark"
+        ? settings.fallbackAppearance
+        : DEFAULT_FALLBACK_APPEARANCE;
 
     return {
       lightTheme: settings.lightTheme ?? DEFAULT_LIGHT_THEME,
       darkTheme: settings.darkTheme ?? DEFAULT_DARK_THEME,
+      fallbackAppearance,
     };
   } catch {
     return {
       lightTheme: DEFAULT_LIGHT_THEME,
       darkTheme: DEFAULT_DARK_THEME,
+      fallbackAppearance: DEFAULT_FALLBACK_APPEARANCE,
     };
   }
 }
 
-async function isMacDarkMode(): Promise<boolean> {
+async function runCommand(
+  command: string,
+  args: string[],
+): Promise<string | undefined> {
   try {
-    const { stdout } = await execAsync(
-      `osascript -e 'tell application "System Events" to tell appearance preferences to return dark mode'`,
-    );
-    return stdout.trim() === "true";
+    const { stdout } = await execFileAsync(command, args, {
+      timeout: DETECTION_TIMEOUT_MS,
+      windowsHide: true,
+    });
+    return stdout.trim();
   } catch {
-    // If detection fails, prefer dark for readability.
-    return true;
+    return undefined;
   }
+}
+
+async function detectMacAppearance(): Promise<DetectedAppearance> {
+  const stdout = await runCommand("osascript", [
+    "-e",
+    'tell application "System Events" to tell appearance preferences to return dark mode',
+  ]);
+
+  if (stdout === "true") return "dark";
+  if (stdout === "false") return "light";
+  return "unknown";
+}
+
+async function detectWindowsAppearance(): Promise<DetectedAppearance> {
+  const stdout = await runCommand("powershell.exe", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    "(Get-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name AppsUseLightTheme).AppsUseLightTheme",
+  ]);
+
+  if (stdout === "0") return "dark";
+  if (stdout === "1") return "light";
+  return "unknown";
+}
+
+function parseLinuxColorScheme(stdout: string | undefined): DetectedAppearance {
+  const value = stdout?.toLowerCase() ?? "";
+  if (value.includes("prefer-dark") || value.includes("dark")) return "dark";
+  if (value.includes("prefer-light") || value.includes("light")) return "light";
+  return "unknown";
+}
+
+function parsePortalColorScheme(
+  stdout: string | undefined,
+): DetectedAppearance {
+  const value = stdout ?? "";
+  const match = value.match(/uint32\s+([0-2])/);
+  if (match?.[1] === "1") return "dark";
+  if (match?.[1] === "2") return "light";
+  return "unknown";
+}
+
+async function detectLinuxAppearance(): Promise<DetectedAppearance> {
+  const gsettingsAppearance = parseLinuxColorScheme(
+    await runCommand("gsettings", [
+      "get",
+      "org.gnome.desktop.interface",
+      "color-scheme",
+    ]),
+  );
+  if (gsettingsAppearance !== "unknown") return gsettingsAppearance;
+
+  const portalAppearance = parsePortalColorScheme(
+    await runCommand("gdbus", [
+      "call",
+      "--session",
+      "--dest",
+      "org.freedesktop.portal.Desktop",
+      "--object-path",
+      "/org/freedesktop/portal/desktop",
+      "--method",
+      "org.freedesktop.portal.Settings.Read",
+      "org.freedesktop.appearance",
+      "color-scheme",
+    ]),
+  );
+  if (portalAppearance !== "unknown") return portalAppearance;
+
+  for (const command of ["kreadconfig6", "kreadconfig5"]) {
+    const kdeAppearance = parseLinuxColorScheme(
+      await runCommand(command, ["--group", "General", "--key", "ColorScheme"]),
+    );
+    if (kdeAppearance !== "unknown") return kdeAppearance;
+  }
+
+  return "unknown";
+}
+
+async function detectSystemAppearance(): Promise<DetectedAppearance> {
+  switch (platform()) {
+    case "darwin":
+      return detectMacAppearance();
+    case "win32":
+      return detectWindowsAppearance();
+    case "linux":
+      return detectLinuxAppearance();
+    default:
+      return "unknown";
+  }
+}
+
+function selectTheme(
+  config: ThemeConfig,
+  appearance: DetectedAppearance,
+): string {
+  const resolvedAppearance =
+    appearance === "unknown" ? config.fallbackAppearance : appearance;
+  return resolvedAppearance === "dark" ? config.darkTheme : config.lightTheme;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -57,7 +179,8 @@ export default function (pi: ExtensionAPI) {
     if (!ctx.hasUI) return;
 
     const config = await readThemeConfig();
-    const nextTheme = (await isMacDarkMode()) ? config.darkTheme : config.lightTheme;
+    const appearance = await detectSystemAppearance();
+    const nextTheme = selectTheme(config, appearance);
 
     if (nextTheme === currentTheme && !notify) return;
 
@@ -75,7 +198,8 @@ export default function (pi: ExtensionAPI) {
     lastError = undefined;
 
     if (notify) {
-      ctx.ui.notify(`Theme synced: ${nextTheme}`, "info");
+      const suffix = appearance === "unknown" ? " (fallback)" : "";
+      ctx.ui.notify(`Theme synced: ${nextTheme}${suffix}`, "info");
     }
   }
 
@@ -85,7 +209,8 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerCommand("sync-theme", {
-    description: "Sync pi theme from macOS light/dark mode and settings.json lightTheme/darkTheme",
+    description:
+      "Sync pi theme from system light/dark mode and settings.json lightTheme/darkTheme",
     handler: async (_args, ctx) => {
       await syncTheme(ctx, true);
     },

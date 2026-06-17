@@ -14,16 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci --registry=https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run check
+      - run: pnpm check
 
-      - run: npm run pack:dry
+      - run: pnpm pack:dry
 
-      - run: npm publish --provenance --access public --registry=https://registry.npmjs.org
+      - run: pnpm publish --provenance --access public --registry=https://registry.npmjs.org
