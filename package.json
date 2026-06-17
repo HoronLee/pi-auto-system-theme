@@ -1,6 +1,6 @@
 {
   "name": "pi-auto-system-theme",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A pi extension that follows system light/dark appearance on macOS, Windows, and Linux.",
   "type": "module",
   "packageManager": "pnpm@11.5.0",
