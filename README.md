@@ -1,43 +1,29 @@
 # pi-auto-system-theme
 
-A [pi](https://pi.dev) extension that detects macOS light/dark appearance at pi startup and switches to one of two configurable pi themes.
+一个 [pi](https://pi.dev) 扩展：在 pi 启动时检测 macOS 的浅色 / 深色外观，并切换到对应的可配置 pi 主题。
 
-## What it does
+## 功能
 
-- Detects macOS system appearance once when pi starts.
-- Applies `lightTheme` when macOS is in light mode.
-- Applies `darkTheme` when macOS is in dark mode.
-- Adds `/sync-theme` to force a manual sync.
+- 在 pi 启动时检测一次 macOS 系统外观。
+- macOS 为浅色模式时，应用 `lightTheme`。
+- macOS 为深色模式时，应用 `darkTheme`。
+- 提供 `/sync-theme` 命令用于手动同步主题。
 
-## Install from GitHub
-
-```bash
-pi install git:github.com/HoronLee/pi-auto-system-theme
-```
-
-Or pin a release tag:
-
-```bash
-pi install git:github.com/HoronLee/pi-auto-system-theme@v0.1.0
-```
-
-Reload pi after installing:
-
-```text
-/reload
-```
-
-## Install from npm
-
-After the package is published to npm:
+## 安装
 
 ```bash
 pi install npm:pi-auto-system-theme
 ```
 
-## Configure
+安装后重新加载 pi：
 
-Add `lightTheme` and `darkTheme` to `~/.pi/agent/settings.json`:
+```text
+/reload
+```
+
+## 配置
+
+在 `~/.pi/agent/settings.json` 中添加 `lightTheme` 和 `darkTheme`：
 
 ```json
 {
@@ -46,37 +32,37 @@ Add `lightTheme` and `darkTheme` to `~/.pi/agent/settings.json`:
 }
 ```
 
-If you use Catppuccin, install its pi theme package too:
+如果你使用 Catppuccin 主题，也需要安装对应的 pi 主题包：
 
 ```bash
 pi install git:github.com/otahontas/pi-coding-agent-catppuccin
 ```
 
-Then reload or restart pi.
+然后重新加载或重启 pi。
 
-## Manual sync
+## 手动同步
 
-Inside pi:
+在 pi 中执行：
 
 ```text
 /sync-theme
 ```
 
-## Defaults
+## 默认值
 
-If `lightTheme` or `darkTheme` is missing, the extension falls back to pi's built-in `light` and `dark` themes.
+如果没有配置 `lightTheme` 或 `darkTheme`，扩展会回退到 pi 内置的 `light` 和 `dark` 主题。
 
-## Platform support
+## 平台支持
 
-This extension currently targets macOS because it uses:
+该扩展目前面向 macOS，因为它通过下面的命令检测系统外观：
 
 ```bash
 osascript -e 'tell application "System Events" to tell appearance preferences to return dark mode'
 ```
 
-On non-macOS systems or when detection fails, it falls back to the dark theme.
+在非 macOS 系统上，或检测失败时，会回退到深色主题。
 
-## Development
+## 开发
 
 ```bash
 npm install --registry=https://registry.npmjs.org
@@ -84,37 +70,17 @@ npm run check
 npm run pack:dry
 ```
 
-Test locally without installing:
+本地测试（不安装）：
 
 ```bash
 pi -e ./extensions/auto-system-theme.ts
 ```
 
-Or install from a local checkout:
+或者从本地目录安装：
 
 ```bash
 pi install /absolute/path/to/pi-auto-system-theme
 ```
-
-## Release
-
-This repository publishes to npm from GitHub Actions when a `v*` tag is pushed.
-
-The workflow uses npm trusted publishing/provenance, matching npm's recommended GitHub Actions flow.
-Configure this package's trusted publisher on npmjs.com after the package exists:
-
-- Repository: `HoronLee/pi-auto-system-theme`
-- Workflow: `publish.yml`
-- Environment: leave empty unless you add one later
-
-Then bump `package.json` version, commit, tag, and push:
-
-```bash
-git tag v0.1.0
-git push origin main --tags
-```
-
-The GitHub Actions workflow will run typecheck, verify the npm package contents, and publish to npm with provenance.
 
 ## License
 
