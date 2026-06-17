@@ -1,15 +1,13 @@
 # pi-auto-system-theme
 
-A [pi](https://pi.dev) extension that follows macOS light/dark appearance and switches between two configurable pi themes.
+A [pi](https://pi.dev) extension that detects macOS light/dark appearance at pi startup and switches to one of two configurable pi themes.
 
 ## What it does
 
-- Detects macOS system appearance with `osascript`.
+- Detects macOS system appearance once when pi starts.
 - Applies `lightTheme` when macOS is in light mode.
 - Applies `darkTheme` when macOS is in dark mode.
-- Polls every 2 seconds so theme changes are picked up while pi is running.
 - Adds `/sync-theme` to force a manual sync.
-- Keeps the footer clean; it does not show a persistent status item.
 
 ## Install from GitHub
 
@@ -81,7 +79,7 @@ On non-macOS systems or when detection fails, it falls back to the dark theme.
 ## Development
 
 ```bash
-npm install
+npm install --registry=https://registry.npmjs.org
 npm run check
 npm run pack:dry
 ```

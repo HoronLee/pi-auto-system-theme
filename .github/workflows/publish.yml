@@ -20,10 +20,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --registry=https://registry.npmjs.org
 
       - run: npm run check
 
       - run: npm run pack:dry
 
-      - run: npm publish --provenance --access public
+      - run: npm publish --provenance --access public --registry=https://registry.npmjs.org

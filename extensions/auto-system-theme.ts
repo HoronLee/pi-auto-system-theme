@@ -9,7 +9,6 @@ const execAsync = promisify(exec);
 
 const DEFAULT_LIGHT_THEME = "light";
 const DEFAULT_DARK_THEME = "dark";
-const POLL_INTERVAL_MS = 2_000;
 
 type AutoThemeSettings = {
   lightTheme?: string;
@@ -51,7 +50,6 @@ async function isMacDarkMode(): Promise<boolean> {
 }
 
 export default function (pi: ExtensionAPI) {
-  let intervalId: ReturnType<typeof setInterval> | undefined;
   let currentTheme: string | undefined;
   let lastError: string | undefined;
 
@@ -84,18 +82,6 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     ctx.ui.setStatus("auto-theme", undefined);
     await syncTheme(ctx);
-
-    intervalId = setInterval(() => {
-      void syncTheme(ctx);
-    }, POLL_INTERVAL_MS);
-    intervalId.unref?.();
-  });
-
-  pi.on("session_shutdown", () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = undefined;
-    }
   });
 
   pi.registerCommand("sync-theme", {
