@@ -34,7 +34,7 @@
     "check": "biome check . && tsc --noEmit",
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
-    "pack:dry": "pnpm pack --dry-run"
+    "pack:dry": "npm pack --dry-run"
   },
   "pi": {
     "extensions": [
