@@ -1,0 +1,52 @@
+{
+  "name": "pi-auto-system-theme",
+  "version": "0.1.0",
+  "description": "A pi extension that follows macOS light/dark appearance and switches between configurable themes.",
+  "type": "module",
+  "license": "MIT",
+  "author": "HoronLee",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HoronLee/pi-auto-system-theme.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HoronLee/pi-auto-system-theme/issues"
+  },
+  "homepage": "https://github.com/HoronLee/pi-auto-system-theme#readme",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi",
+    "theme",
+    "macos",
+    "catppuccin"
+  ],
+  "files": [
+    "extensions",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/auto-system-theme.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.79.6",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
